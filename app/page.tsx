@@ -51,6 +51,56 @@ const CONFIDENCE_COLOR: Record<string, string> = {
   low:"text-red-600 bg-red-50 border-red-200",
 };
 
+const DEMO_IMAGE_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <rect width="1200" height="760" fill="#e2e8f0"/>
+  <rect x="0" y="560" width="1200" height="200" fill="#cbd5e1"/>
+  <path d="M138 228L600 98L1062 228L960 612H240Z" fill="#64748b"/>
+  <path d="M600 98L960 612H240Z" fill="#475569" opacity="0.55"/>
+  <path d="M138 228L600 98L1062 228" fill="none" stroke="#334155" stroke-width="10"/>
+  <path d="M240 612H960" fill="none" stroke="#334155" stroke-width="12"/>
+  <g opacity="0.23" stroke="#f8fafc" stroke-width="4">
+    <path d="M220 252L1010 252"/><path d="M210 302L998 302"/><path d="M198 352L986 352"/>
+    <path d="M186 402L974 402"/><path d="M174 452L962 452"/><path d="M162 502L950 502"/>
+    <path d="M150 552L938 552"/>
+  </g>
+  <rect x="790" y="286" width="96" height="72" rx="12" fill="#ef4444"/>
+  <circle cx="838" cy="322" r="28" fill="#fecaca"/>
+  <rect x="420" y="378" width="86" height="52" rx="8" fill="#f97316"/>
+  <rect x="548" y="210" width="104" height="38" rx="8" fill="#38bdf8" opacity="0.75"/>
+  <rect x="80" y="610" width="1040" height="90" fill="#94a3b8" opacity="0.35"/>
+</svg>
+`)}`;
+
+const DEMO_RESULT: AnalysisResult = {
+  roof: {
+    roof_type: "pitched",
+    estimated_total_area_sqm: 125,
+    usable_area_sqm: 104,
+    polygon: [
+      { x: 11.5, y: 30 },
+      { x: 50, y: 13 },
+      { x: 88.5, y: 30 },
+      { x: 80, y: 80.5 },
+      { x: 20, y: 80.5 },
+    ],
+  },
+  obstacles: [
+    { type: "water_tank", label: "Water Tank", bbox: { x: 65.5, y: 37.5, w: 8, h: 9.5 }, shadow_buffer_m: 2 },
+    { type: "ac_unit", label: "AC Unit", bbox: { x: 35, y: 49.5, w: 7.5, h: 7 }, shadow_buffer_m: 1 },
+    { type: "skylight", label: "Skylight", bbox: { x: 45.5, y: 27.5, w: 9, h: 5 }, shadow_buffer_m: 0 },
+  ],
+  panels: [],
+  panel_count: 0,
+  panel_orientation: "portrait",
+  system_capacity_kwp: 0,
+  annual_yield_kwh: 0,
+  tilt_assumed_deg: 12,
+  azimuth_deg: 180,
+  confidence: "high",
+  engineer_notes: "Demo data only. The roof boundary and obstacles are preloaded so the full interface can be viewed without an API key.",
+};
+
 // ── Root component ─────────────────────────────────────────────────────────
 export default function Home() {
   const [step, setStep] = useState<Step>(1);
@@ -144,6 +194,12 @@ export default function Home() {
     try { const data = await callAnalyzeApi(false); setResult(data); setStep(2); }
     catch (e) { setError("Analysis failed. Check your API key and try again."); console.error(e); }
     finally { setLoading(false); }
+  }
+  function openDemo() {
+    setImageFile(null); setImageUrl(DEMO_IMAGE_URL); setResult(DEMO_RESULT);
+    setMonthlyBill("350"); setError(null); setEditedPolygon(null);
+    setEditedObstacles(null); setAddObstacleMode(false); setPendingBBox(null);
+    setMaxFill(false); setStep(4);
   }
   async function redetect() {
     setRedetecting(true); setError(null);
@@ -279,6 +335,12 @@ export default function Home() {
                 {loading ? (
                   <><span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Analysing roof structure...</>
                 ) : "Detect Roof & Obstacles"}
+              </button>
+              <button
+                onClick={openDemo}
+                className="w-full mt-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 rounded-xl text-sm transition-colors"
+              >
+                Open Demo Without API Key
               </button>
               {error && (
                 <div className="mt-3 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-xs flex items-center gap-2">
