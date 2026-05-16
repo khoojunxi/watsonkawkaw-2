@@ -1,6 +1,6 @@
-# EV Charger AI
+# watsonkawkaw2
 
-This is a Next.js project for the EV charger AI prototype.
+This is a Next.js project for the watsonkawkaw2 prototype.
 
 ## For Teammates: Open The Project In VS Code
 
@@ -25,14 +25,14 @@ Recommended easy method:
 4. Extract the ZIP file.
 5. Open VS Code.
 6. In VS Code, click `File` > `Open Folder`.
-7. Select the extracted `ev-charger-ai` folder.
+7. Select the extracted folder. It is usually called `watsonkawkaw-2-main` if you downloaded the ZIP from GitHub.
 8. If VS Code asks whether you trust the folder, click `Yes, I trust the authors`.
 
 Alternative method if you know Git:
 
 ```bash
-git clone YOUR_GITHUB_REPO_LINK_HERE
-cd ev-charger-ai
+git clone https://github.com/khoojunxi/watsonkawkaw-2.git
+cd watsonkawkaw-2
 code .
 ```
 
@@ -100,7 +100,7 @@ Only the owner needs to do this.
 
 1. Go to https://github.com/
 2. Click `+` > `New repository`.
-3. Repository name: `ev-charger-ai`
+3. Repository name: `watsonkawkaw-2`
 4. Choose `Public` or `Private`.
 5. Do not add README, `.gitignore`, or license on GitHub because this project already has them locally.
 6. Click `Create repository`.
@@ -114,14 +114,14 @@ git init
 git add .
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin YOUR_GITHUB_REPO_LINK_HERE
+git remote add origin https://github.com/khoojunxi/watsonkawkaw-2.git
 git push -u origin main
 ```
 
-Replace `YOUR_GITHUB_REPO_LINK_HERE` with the repo link from GitHub, for example:
+The GitHub repo link is:
 
 ```text
-https://github.com/your-username/ev-charger-ai.git
+https://github.com/khoojunxi/watsonkawkaw-2.git
 ```
 
 If the repo is private, invite teammates from GitHub repo `Settings` > `Collaborators`.

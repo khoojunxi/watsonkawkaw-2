@@ -342,4 +342,4 @@ Build a deterministic taxonomy:
 
 ---
 
-**Current implementation:** Milestones 1–4 are functional in `C:\UM\Claude watson kaw kaw deal\ev-charger-ai\`. Remaining work is Milestone 5 (demo mode + report + pitch).
+**Current implementation:** Milestones 1–4 are functional in the `watsonkawkaw2` project. Remaining work is Milestone 5 (demo mode + report + pitch).
