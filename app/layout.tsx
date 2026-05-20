@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// Nunito — rounded terminals give the UI a softer, friendlier feel
+const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
 
 export const metadata: Metadata = {
   title: "SolarFit AI — Automated PV Layout Designer",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={nunito.variable}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

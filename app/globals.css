@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Tabular numbers for all numeric data */
