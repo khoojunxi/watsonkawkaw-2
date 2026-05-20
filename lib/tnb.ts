@@ -1,101 +1,94 @@
-// TNB Tariff B (Domestic) — effective July 2025
-// Source: Tenaga Nasional Berhad published rates
-export const TARIFF_B_TIERS = [
-  { upTo: 200, rate: 0.218 },   // 1-200 kWh: 21.8 sen
-  { upTo: 300, rate: 0.334 },   // 201-300: 33.4 sen
-  { upTo: 600, rate: 0.516 },   // 301-600: 51.6 sen
-  { upTo: 900, rate: 0.546 },   // 601-900: 54.6 sen
-  { upTo: Infinity, rate: 0.571 }, // 901+: 57.1 sen
-];
+// ── Malaysia TNB Domestic Tariff — effective 1 July 2025 (RP4 "Tariff Reform") ──
+// Rates reconciled cent-for-cent against a real TNB bill ("Pecahan Pengiraan Bil
+// Anda"). AFA (Automatic Fuel Adjustment) is intentionally excluded — it changes
+// every month and can swing either way, so it cannot be forecast.
+export const TNB_TARIFF = {
+  ENERGY_LOW:  0.2703,  // RM/kWh — when total monthly usage ≤ 1500 kWh
+  ENERGY_HIGH: 0.3703,  // RM/kWh — when usage > 1500 kWh (applies to ALL kWh)
+  CAPACITY:    0.0455,  // RM/kWh
+  NETWORK:     0.1285,  // RM/kWh
+  RETAIL:      10.00,   // RM/month — waived when usage ≤ 600 kWh
+  TIER_KWH:        1500, // whole-consumption tier boundary
+  RETAIL_FREE_KWH:  600,
+  ST_RATE:         0.08, // service tax — on the usage charge for kWh above 600
+  ST_THRESHOLD_KWH: 600,
+  KWTBB_RATE:     0.016, // renewable-energy fund (KWTBB)
+  KWTBB_FREE_KWH:   300, // KWTBB waived when usage ≤ 300 kWh
+} as const;
 
-// Tariff C1 (Commercial Low Voltage) flat-ish average
-export const TARIFF_C1_AVG = 0.435;
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
-// Calculate the kWh consumption that produces a given monthly bill (Tariff B inverse)
-export function billToKwh(monthlyBillMyr: number): number {
-  if (monthlyBillMyr <= 0) return 0;
-  let remaining = monthlyBillMyr;
-  let kwh = 0;
-  let prevCap = 0;
+/** Energy rate (RM/kWh) — whole-consumption tier: cross 1500 kWh and ALL kWh jump. */
+export function energyRate(monthlyKwh: number): number {
+  return monthlyKwh > TNB_TARIFF.TIER_KWH ? TNB_TARIFF.ENERGY_HIGH : TNB_TARIFF.ENERGY_LOW;
+}
 
-  for (const tier of TARIFF_B_TIERS) {
-    const tierKwh = tier.upTo === Infinity ? Infinity : tier.upTo - prevCap;
-    const tierCostMax = tierKwh === Infinity ? Infinity : tierKwh * tier.rate;
+export interface BillBreakdown {
+  kwh: number;
+  energy: number;
+  capacity: number;
+  network: number;
+  retail: number;
+  serviceTax: number;
+  kwtbb: number;
+  total: number;          // RM/month
+  effectiveRate: number;  // RM/kWh, all-in average
+}
 
-    if (remaining <= tierCostMax) {
-      kwh += remaining / tier.rate;
-      return Math.round(kwh);
-    }
-
-    kwh += tierKwh === Infinity ? 0 : tierKwh;
-    remaining -= tierCostMax;
-    prevCap = tier.upTo === Infinity ? prevCap : tier.upTo;
+/** Full itemised monthly TNB bill for a given consumption (kWh). */
+export function tariffBill(monthlyKwh: number): BillBreakdown {
+  const t = TNB_TARIFF;
+  if (monthlyKwh <= 0) {
+    return { kwh: 0, energy: 0, capacity: 0, network: 0, retail: 0,
+             serviceTax: 0, kwtbb: 0, total: 0, effectiveRate: 0 };
   }
-  return Math.round(kwh);
+  const eRate = energyRate(monthlyKwh);
+
+  const energy   = monthlyKwh * eRate;
+  const capacity = monthlyKwh * t.CAPACITY;
+  const network  = monthlyKwh * t.NETWORK;
+  const retail   = monthlyKwh > t.RETAIL_FREE_KWH ? t.RETAIL : 0;
+
+  // Service tax 8% — on the usage charge for the kWh above 600 (retail is taxed too).
+  const taxedKwh    = Math.max(0, monthlyKwh - t.ST_THRESHOLD_KWH);
+  const taxedCharge = taxedKwh * (eRate + t.CAPACITY + t.NETWORK) + retail;
+  const serviceTax  = taxedCharge * t.ST_RATE;
+
+  // KWTBB 1.6% — on energy + capacity + network (retail excluded), waived ≤ 300 kWh.
+  const kwtbb = monthlyKwh > t.KWTBB_FREE_KWH
+    ? (energy + capacity + network) * t.KWTBB_RATE
+    : 0;
+
+  const total = energy + capacity + network + retail + serviceTax + kwtbb;
+  return {
+    kwh: monthlyKwh,
+    energy: round2(energy), capacity: round2(capacity), network: round2(network),
+    retail: round2(retail), serviceTax: round2(serviceTax), kwtbb: round2(kwtbb),
+    total: round2(total), effectiveRate: total / monthlyKwh,
+  };
 }
 
-// Calculate bill from kWh (Tariff B progressive)
-export function kwhToBill(kwh: number): number {
-  if (kwh <= 0) return 0;
-  let bill = 0;
-  let prev = 0;
-  for (const tier of TARIFF_B_TIERS) {
-    const inTier = Math.min(kwh, tier.upTo) - prev;
-    if (inTier <= 0) break;
-    bill += inTier * tier.rate;
-    prev = tier.upTo;
-    if (kwh <= tier.upTo) break;
-  }
-  return Math.round(bill * 100) / 100;
-}
-
-// Marginal/effective rate for a given consumption level
-export function effectiveRate(monthlyKwh: number): number {
-  if (monthlyKwh <= 0) return TARIFF_B_TIERS[0].rate;
-  return kwhToBill(monthlyKwh) / monthlyKwh;
-}
-
-// PV system constants (Malaysia)
+// ── PV system economics (Malaysia) ────────────────────────────────────────────
 export const PV_CONSTANTS = {
-  PANEL_WATTAGE: 620,            // Wp per panel
-  PANEL_LENGTH_M: 2.278,         // 2278mm
-  PANEL_WIDTH_M: 1.134,          // 1134mm
-  PANEL_AREA_SQM: 2.578,
-  PEAK_SUN_HOURS: 4.5,           // Malaysia average
-  SYSTEM_LOSSES: 0.15,           // 15% combined losses
-  PERFORMANCE_RATIO: 0.85,       // 1 - losses
-  COST_PER_KWP_MYR: 3500,        // typical installed cost in Malaysia (incl inverter, mounting, labour)
+  PEAK_SUN_HOURS: 4.5,      // Malaysia average peak-sun-hours/day
+  PERFORMANCE_RATIO: 0.85,  // 1 − 15% combined system losses
+  COST_PER_KWP_MYR: 3500,   // typical installed cost (inverter, mounting, labour)
 };
 
-// Number of panels needed to fully offset given annual consumption (NEM 1:1)
-export function panelsNeededForConsumption(annualKwh: number): {
-  panels: number;
-  kwp: number;
-  cost: number;
-} {
-  const c = PV_CONSTANTS;
-  const yieldPerPanelKwh = (c.PANEL_WATTAGE / 1000) * c.PEAK_SUN_HOURS * 365 * c.PERFORMANCE_RATIO;
-  const panels = Math.ceil(annualKwh / yieldPerPanelKwh);
-  const kwp = (panels * c.PANEL_WATTAGE) / 1000;
-  const cost = kwp * c.COST_PER_KWP_MYR;
-  return { panels, kwp, cost };
-}
-
-// ── NEM 3.0 System Sizing ─────────────────────────────────────────────────
-// Malaysia NEM 3.0: self-consumption valued at full tariff rate,
-// export valued at "Displaced Cost" (~8–12 sen). Sizing to 75% self-consumption
-// maximises ROI under this asymmetric pricing.
+// ── NEM 3.0 System Sizing ──────────────────────────────────────────────────────
+// Malaysia NEM 3.0: self-consumption valued at the full tariff rate, export at a
+// low "displaced cost". Sizing to 75% self-consumption maximises ROI.
 export const NEM3 = {
-  SELF_CONSUMPTION_RATIO: 0.75,   // Target self-consumption fraction
-  PEAK_SUN_HOURS: 4.5,            // Malaysia average PSH
-  PERFORMANCE_RATIO: 0.85,        // PR (1 − 15% losses)
-  PANEL_WP: 620,                  // Module wattage
+  SELF_CONSUMPTION_RATIO: 0.75,
+  PEAK_SUN_HOURS: 4.5,
+  PERFORMANCE_RATIO: 0.85,
+  PANEL_WP: 620,            // matches FIXED_MODULE.wattage in lib/geometry.ts
 };
 
 export function nemSizing(annualKwh: number): {
-  targetKwp: number;           // Raw kWp target (before rounding to panels)
-  recommendedPanels: number;   // Panels needed (ceiling)
-  projectedYieldKwh: number;   // Actual yield with recommendedPanels installed
+  targetKwp: number;
+  recommendedPanels: number;
+  projectedYieldKwh: number;
 } {
   const rawKwp = (annualKwh * NEM3.SELF_CONSUMPTION_RATIO) /
     (NEM3.PEAK_SUN_HOURS * 365 * NEM3.PERFORMANCE_RATIO);
@@ -110,38 +103,48 @@ export function nemSizing(annualKwh: number): {
   };
 }
 
-// Financial analysis given installed system and bill
+// ── Solar financial analysis ───────────────────────────────────────────────────
+/**
+ * Savings = the drop in the monthly TNB bill once solar offsets self-consumed
+ * energy, evaluated with the real tariff via tariffBill() — so the 1500 kWh tier
+ * jump, the fixed retail charge and the taxes are all handled correctly.
+ */
 export function financialAnalysis(
-  installedPanels: number,
   installedKwp: number,
   annualYieldKwh: number,
-  monthlyBillMyr: number
+  monthlyKwh: number,
 ) {
-  const c = PV_CONSTANTS;
-  const annualConsumptionKwh = billToKwh(monthlyBillMyr) * 12;
-  const offsetKwh = Math.min(annualYieldKwh, annualConsumptionKwh);
-  const remainingKwh = Math.max(0, annualConsumptionKwh - offsetKwh);
-  const effRate = effectiveRate(billToKwh(monthlyBillMyr));
+  const annualConsumptionKwh = monthlyKwh * 12;
 
-  const annualSavings = offsetKwh * effRate;
-  const systemCost = installedKwp * c.COST_PER_KWP_MYR;
+  const billBefore = tariffBill(monthlyKwh);
+  // Solar offsets consumption month by month (cannot push usage below 0).
+  const monthlyOffset = Math.min(annualYieldKwh / 12, monthlyKwh);
+  const billAfter = tariffBill(monthlyKwh - monthlyOffset);
+
+  const monthlySavings = billBefore.total - billAfter.total;
+  const annualSavings = monthlySavings * 12;
+
+  const systemCost = installedKwp * PV_CONSTANTS.COST_PER_KWP_MYR;
   const paybackYears = systemCost / Math.max(annualSavings, 1);
-  const offsetPercent = annualConsumptionKwh > 0 ? (offsetKwh / annualConsumptionKwh) * 100 : 0;
 
-  // 25-year lifetime projection (panels degrade ~0.5%/yr → average 90% over lifetime)
-  const lifetimeSavings = annualSavings * 25 * 0.9;
-  const lifetimeProfit = lifetimeSavings - systemCost;
+  const offsetKwh = Math.min(annualYieldKwh, annualConsumptionKwh);
+  const offsetPercent = annualConsumptionKwh > 0
+    ? (offsetKwh / annualConsumptionKwh) * 100
+    : 0;
+
+  // 25-year lifetime projection (panels degrade ~0.5%/yr → ~90% average output).
+  const lifetimeProfit = annualSavings * 25 * 0.9 - systemCost;
 
   return {
     annualConsumptionKwh,
+    billBefore,
     offsetKwh: Math.round(offsetKwh),
-    remainingKwh: Math.round(remainingKwh),
     offsetPercent: Math.round(offsetPercent),
     annualSavings: Math.round(annualSavings),
-    monthlySavings: Math.round(annualSavings / 12),
+    monthlySavings: Math.round(monthlySavings),
     systemCost: Math.round(systemCost),
     paybackYears: Math.round(paybackYears * 10) / 10,
     lifetimeProfit: Math.round(lifetimeProfit),
-    effectiveRate: effRate,
+    effectiveRate: billBefore.effectiveRate,
   };
 }

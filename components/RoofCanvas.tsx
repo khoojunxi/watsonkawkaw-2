@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { PANEL_EDGE_SETBACK_M, planeColor } from "@/lib/geometry";
+import { getObstacleDefinition } from "@/lib/obstacles";
 
 export interface Point { x: number; y: number; }
 export interface BBox { x: number; y: number; w: number; h: number; }
-export interface Panel { x: number; y: number; w: number; h: number; angle: number; }
+export interface Panel { x: number; y: number; w: number; h: number; angle: number; score?: number; }
 export interface Obstacle {
   type: string;
   label: string;
@@ -18,21 +20,11 @@ interface Props {
   obstacles?: Obstacle[];
   panels?: Panel[];
   expansionPanels?: Panel[];   // shown as greyed "reserved for expansion" slots
+  planes?: Point[][];          // optional roof-plane outlines (one polygon each)
   showPanels?: boolean;
   showObstacles?: boolean;
   showRoof?: boolean;
 }
-
-const obstacleColors: Record<string, string> = {
-  water_tank: "#ef4444",
-  ac_unit: "#f97316",
-  vent: "#eab308",
-  chimney: "#a855f7",
-  parapet: "#06b6d4",
-  skylight: "#3b82f6",
-  antenna: "#ec4899",
-  other: "#6b7280",
-};
 
 export default function RoofCanvas({
   imageUrl,
@@ -40,6 +32,7 @@ export default function RoofCanvas({
   obstacles = [],
   panels = [],
   expansionPanels = [],
+  planes = [],
   showPanels = true,
   showObstacles = true,
   showRoof = true,
@@ -64,24 +57,24 @@ export default function RoofCanvas({
 
       ctx.drawImage(img, 0, 0, W, H);
 
-      // ── 1. Roof polygon ───────────────────────────────────────────────────
-      if (showRoof && polygon.length >= 3) {
+      // ── 1. Roof polygon — removed; manually drawn planes are shown instead
+
+      // ── 1b. Roof-plane outlines ───────────────────────────────────────────
+      planes.forEach((poly, idx) => {
+        if (poly.length < 3) return;
         ctx.beginPath();
-        polygon.forEach((p, i) => {
+        poly.forEach((p, i) => {
           const px = (p.x / 100) * W;
           const py = (p.y / 100) * H;
           if (i === 0) ctx.moveTo(px, py);
           else ctx.lineTo(px, py);
         });
         ctx.closePath();
-        ctx.strokeStyle = "#22c55e";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([8, 4]);
-        ctx.stroke();
+        ctx.strokeStyle = planeColor(idx);
+        ctx.lineWidth = 2.5;
         ctx.setLineDash([]);
-        ctx.fillStyle = "rgba(34, 197, 94, 0.08)";
-        ctx.fill();
-      }
+        ctx.stroke();
+      });
 
       // ── 2. Obstacles ──────────────────────────────────────────────────────
       if (showObstacles) {
@@ -90,7 +83,8 @@ export default function RoofCanvas({
           const y = (o.bbox.y / 100) * H;
           const w = (o.bbox.w / 100) * W;
           const h = (o.bbox.h / 100) * H;
-          const color = obstacleColors[o.type] ?? "#6b7280";
+          const definition = getObstacleDefinition(o.type);
+          const color = definition.color;
 
           if (o.shadow_buffer_m > 0) {
             const bufferPx = Math.min(w, h) * 0.4;
@@ -106,7 +100,7 @@ export default function RoofCanvas({
 
           ctx.fillStyle = color;
           ctx.font = "bold 11px sans-serif";
-          const label = o.label || o.type.replace(/_/g, " ");
+          const label = o.label || definition.label;
           const textW = ctx.measureText(label).width;
           ctx.fillRect(x, y - 16, textW + 8, 16);
           ctx.fillStyle = "white";
@@ -143,6 +137,12 @@ export default function RoofCanvas({
       // ── 3b. Active panels ─────────────────────────────────────────────────
       // ── 3. Panels ─────────────────────────────────────────────────────────
       if (showPanels && panels.length > 0) {
+        // Yield tint — best-scored panels read as deep vivid blue, lower-yield
+        // panels lighten slightly, so the sun-aware ranking is visible.
+        const scores = panels.map((p) => p.score ?? 1);
+        const sMin = Math.min(...scores), sMax = Math.max(...scores);
+        const sRange = sMax - sMin;
+
         panels.forEach((p, i) => {
           const pcx = ((p.x + p.w / 2) / 100) * W;   // centre in pixels
           const pcy = ((p.y + p.h / 2) / 100) * H;
@@ -154,8 +154,13 @@ export default function RoofCanvas({
           ctx.translate(pcx, pcy);
           ctx.rotate(rot);
 
-          // Panel body — deep blue like real monocrystalline silicon
-          ctx.fillStyle = "rgba(23, 55, 162, 0.75)";
+          // Panel body — deep blue like real monocrystalline silicon,
+          // lightened for lower-yield panels (t = 1 best → 0 lowest).
+          const t = sRange > 1e-6 ? ((p.score ?? 1) - sMin) / sRange : 1;
+          const r = Math.round(23 + (1 - t) * 70);
+          const g = Math.round(55 + (1 - t) * 70);
+          const b = Math.round(162 + (1 - t) * 30);
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.78)`;
           ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
 
           // Inner cell-grid lines (4 horizontal bands)
@@ -194,8 +199,8 @@ export default function RoofCanvas({
 
         // ── Legend (bottom-right corner) ────────────────────────────────────
         const legendLines = expansionPanels.length > 0
-          ? [`${panels.length} × 620 Wp (active)`, `${expansionPanels.length} slots reserved for expansion`, "0.5 m gap · 0.3 m setback"]
-          : [`${panels.length} × 620 Wp module`, "0.5 m gap · 0.3 m setback · 1.0 m obs. buffer"];
+          ? [`${panels.length} × 620 Wp (active)`, `${expansionPanels.length} slots reserved for expansion`, `0.5 m gap · ${PANEL_EDGE_SETBACK_M} m setback`]
+          : [`${panels.length} × 620 Wp module`, `0.5 m gap · ${PANEL_EDGE_SETBACK_M} m setback · 1.0 m obs. buffer`];
         const padX = 10, padY = 8, lineH = 14;
         const boxH = legendLines.length * lineH + padY * 2;
         ctx.font = "11px sans-serif";
@@ -231,7 +236,7 @@ export default function RoofCanvas({
         });
       }
     };
-  }, [imageUrl, polygon, obstacles, panels, expansionPanels, showPanels, showObstacles, showRoof]);
+  }, [imageUrl, polygon, obstacles, panels, expansionPanels, planes, showPanels, showObstacles, showRoof]);
 
   return <canvas ref={canvasRef} className="w-full h-auto rounded-xl block" />;
 }

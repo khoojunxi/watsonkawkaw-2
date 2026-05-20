@@ -1,0 +1,147 @@
+
+> watsonkawkaw2@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.3.2
+   - Local:        http://localhost:3000
+   - Network:      http://10.167.71.226:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.2s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.7s (776 modules)
+ GET / 200 in 2991ms
+ GET / 200 in 61ms
+ GET / 200 in 45ms
+ ○ Compiling /api/analyze ...
+ ✓ Compiled /api/analyze in 1219ms (925 modules)
+ GET / 200 in 236ms
+ POST /api/analyze 200 in 9045ms
+ ✓ Compiled /api/tnb-bill in 363ms (909 modules)
+ POST /api/tnb-bill 200 in 2114ms
+ ✓ Compiled in 511ms (768 modules)
+ GET / 200 in 115ms
+ ✓ Compiled in 166ms (367 modules)
+ GET / 200 in 26ms
+ ✓ Compiled in 107ms (367 modules)
+ GET / 200 in 21ms
+ ✓ Compiled in 329ms (768 modules)
+ GET / 200 in 62ms
+ ✓ Compiled in 261ms (768 modules)
+ GET / 200 in 58ms
+ ✓ Compiled in 230ms (768 modules)
+ GET / 200 in 53ms
+ ○ Compiling /api/tnb-bill ...
+ ✓ Compiled /api/tnb-bill in 534ms (556 modules)
+ GET / 200 in 200ms
+ POST /api/tnb-bill 200 in 4725ms
+ ✓ Compiled /api/analyze in 215ms (558 modules)
+ POST /api/analyze 200 in 9310ms
+ ✓ Compiled in 225ms (367 modules)
+ GET / 200 in 154ms
+ ✓ Compiled in 171ms (367 modules)
+ GET / 200 in 111ms
+ ✓ Compiled in 120ms (367 modules)
+ GET / 200 in 16ms
+ ✓ Compiled in 160ms (367 modules)
+ GET / 200 in 27ms
+ ✓ Compiled in 117ms (367 modules)
+ GET / 200 in 15ms
+ ✓ Compiled in 116ms (367 modules)
+ GET / 200 in 15ms
+ GET / 200 in 65ms
+ ✓ Compiled in 214ms (754 modules)
+ GET / 200 in 100ms
+ ✓ Compiled in 181ms (367 modules)
+ GET / 200 in 34ms
+ ✓ Compiled in 471ms (768 modules)
+ GET / 200 in 79ms
+ ✓ Compiled in 172ms (768 modules)
+ GET / 200 in 68ms
+ ✓ Compiled in 212ms (768 modules)
+ GET / 200 in 55ms
+ ✓ Compiled in 205ms (768 modules)
+ GET / 200 in 54ms
+ ✓ Compiled in 167ms (768 modules)
+ GET / 200 in 44ms
+ ✓ Compiled in 257ms (768 modules)
+ GET / 200 in 67ms
+ ✓ Compiled in 290ms (768 modules)
+ GET / 200 in 105ms
+ ✓ Compiled in 788ms (768 modules)
+ GET / 200 in 120ms
+ ✓ Compiled in 388ms (768 modules)
+ GET / 200 in 105ms
+ ✓ Compiled in 319ms (768 modules)
+ GET / 200 in 112ms
+ ✓ Compiled in 776ms (914 modules)
+ GET / 200 in 104ms
+ ✓ Compiled in 338ms (914 modules)
+ GET / 200 in 73ms
+ ✓ Compiled in 299ms (916 modules)
+ GET / 200 in 53ms
+ ✓ Compiled in 248ms (916 modules)
+ GET / 200 in 73ms
+ ✓ Compiled in 484ms (916 modules)
+ GET / 200 in 116ms
+ ✓ Compiled in 300ms (916 modules)
+ GET / 200 in 46ms
+ ✓ Compiled /_not-found in 488ms (920 modules)
+ GET / 404 in 624ms
+ GET / 200 in 144ms
+ GET /_next/static/css/app/layout.css?v=1779197170059 404 in 23ms
+ GET / 200 in 54ms
+ GET / 200 in 28ms
+ ✓ Compiled /api/segment in 268ms (942 modules)
+ POST /api/segment 502 in 360ms
+ POST /api/segment 400 in 6ms
+ POST /api/segment 502 in 72ms
+ GET / 200 in 172ms
+ GET /_next/static/css/app/layout.css?v=1779197421195 404 in 33ms
+ GET / 200 in 33ms
+ GET /_next/static/css/app/layout.css?v=1779197421413 404 in 30ms
+   Reload env: .env.local
+ ✓ Compiled in 353ms (916 modules)
+   Reload env: .env.local
+ ✓ Compiled in 140ms (902 modules)
+ ✓ Compiled in 198ms (441 modules)
+ ✓ Compiled in 537ms (916 modules)
+ ✓ Compiled in 302ms (916 modules)
+ ✓ Compiled in 260ms (916 modules)
+ ✓ Compiled in 364ms (916 modules)
+ ✓ Compiled in 238ms (441 modules)
+ ✓ Compiled in 150ms (441 modules)
+ ✓ Compiled in 152ms (441 modules)
+   Reload env: .env.local
+ ✓ Compiled in 207ms (902 modules)
+ ✓ Compiled in 2s (441 modules)
+ ✓ Compiled in 144ms (441 modules)
+ ✓ Compiled in 167ms (441 modules)
+ ✓ Compiled in 684ms (916 modules)
+ ✓ Compiled in 378ms (916 modules)
+ ✓ Compiled in 389ms (916 modules)
+ ✓ Compiled in 337ms (916 modules)
+ ✓ Compiled in 312ms (916 modules)
+ ✓ Compiled in 254ms (916 modules)
+   Reload env: .env.local
+ ✓ Compiled in 220ms (916 modules)
+ ✓ Compiled in 143ms (441 modules)
+ ✓ Compiled in 124ms (441 modules)
+ ✓ Compiled in 154ms (441 modules)
+ ✓ Compiled in 123ms (441 modules)
+ ✓ Compiled in 139ms (441 modules)
+ ✓ Compiled in 304ms (916 modules)
+ ✓ Compiled in 214ms (916 modules)
+ ✓ Compiled in 547ms (916 modules)
+ ✓ Compiled in 269ms (916 modules)
+ ✓ Compiled in 1279ms (768 modules)
+ ✓ Compiled in 729ms (768 modules)
+ ✓ Compiled in 672ms (768 modules)
+ ✓ Compiled in 574ms (768 modules)
+ ✓ Compiled in 554ms (768 modules)
+ ✓ Compiled in 576ms (768 modules)
+ ✓ Compiled in 610ms (768 modules)
+ ✓ Compiled in 658ms (768 modules)
+ ✓ Compiled in 162ms (367 modules)
+ ✓ Compiled in 238ms (754 modules)

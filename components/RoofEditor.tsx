@@ -2,22 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { BBox, Obstacle, Point } from "./RoofCanvas";
+import { getObstacleDefinition } from "@/lib/obstacles";
+
+export type RefineMode = "off" | "roof" | "obstacle";
 
 export interface Props {
   imageUrl: string;
   polygon: Point[];
   obstacles: Obstacle[];
   addObstacleMode: boolean;
+  /** SAM 2 click-to-refine mode — "roof" or "obstacle" turns clicks into segment requests. */
+  refineMode?: RefineMode;
+  /** True while a SAM 2 segmentation request is in flight. */
+  segmenting?: boolean;
   onPolygonChange: (polygon: Point[]) => void;
   onObstaclesChange: (obstacles: Obstacle[]) => void;
   onNewObstacleDrawn: (bbox: { x: number; y: number; w: number; h: number }) => void;
+  /** Fired when the user clicks the image in a refine mode. */
+  onImageClick?: (p: Point, shiftKey: boolean) => void;
 }
-
-const COLORS: Record<string, string> = {
-  water_tank: "#ef4444", ac_unit: "#f97316", vent: "#eab308",
-  chimney: "#a855f7", parapet: "#06b6d4", skylight: "#3b82f6",
-  antenna: "#ec4899", other: "#6b7280",
-};
 
 type VtxDrag = { idx: number };
 type ObsDrag = {
@@ -34,9 +37,10 @@ const OBS_CURSORS: Record<string, string> = {
 
 export default function RoofEditor({
   imageUrl, polygon, obstacles,
-  addObstacleMode,
-  onPolygonChange, onObstaclesChange, onNewObstacleDrawn,
+  addObstacleMode, refineMode = "off", segmenting = false,
+  onPolygonChange, onObstaclesChange, onNewObstacleDrawn, onImageClick,
 }: Props) {
+  const editLocked = addObstacleMode || refineMode !== "off";
   const svgRef = useRef<SVGSVGElement>(null);
   const [imgSize, setImgSize] = useState({ w: 900, h: 600 });
   const [pts, setPts] = useState<Point[]>(polygon);
@@ -160,10 +164,18 @@ export default function RoofEditor({
     }
   }
   function onSvgPointerDown(e: React.PointerEvent) {
+    const tag = (e.target as Element).tagName;
+    const onBackground = tag === "svg" || tag === "image";
+
+    // SAM 2 click-to-refine: a click on the image is a segment request.
+    if (refineMode !== "off") {
+      if (onBackground && !segmenting) onImageClick?.(toPercent(e), e.shiftKey);
+      return;
+    }
+
     if (!addObstacleMode) { setSelectedObs(null); return; }
     // Only start draw on the image background
-    const tag = (e.target as Element).tagName;
-    if (tag !== "svg" && tag !== "image") return;
+    if (!onBackground) return;
     e.preventDefault();
     (e.target as Element).setPointerCapture(e.pointerId);
     const p = toPercent(e);
@@ -182,28 +194,18 @@ export default function RoofEditor({
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
         className="w-full h-auto rounded-xl block select-none"
-        style={{ touchAction: "none", cursor: addObstacleMode ? "crosshair" : "default" }}
+        style={{ touchAction: "none", cursor: editLocked ? "crosshair" : "default" }}
         onPointerDown={onSvgPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
         <image href={imageUrl} width={W} height={H} />
 
-        {/* Roof polygon */}
-        <polygon
-          points={polyStr}
-          fill="rgba(34,197,94,0.08)"
-          stroke="#22c55e"
-          strokeWidth="2.5"
-          strokeDasharray="8 4"
-          pointerEvents="none"
-        />
-
         {/* Obstacles */}
         {obstacles.map((o, i) => {
           const ox = sx(o.bbox.x), oy = sy(o.bbox.y);
           const ow = sx(o.bbox.w), oh = sy(o.bbox.h);
-          const color = COLORS[o.type] ?? "#6b7280";
+          const color = getObstacleDefinition(o.type).color;
           const sel = selectedObs === i;
           const labelW = Math.max(ow, o.label.length * 7 + 12);
 
@@ -261,48 +263,25 @@ export default function RoofEditor({
           );
         })()}
 
-        {/* Polygon mid-edge handles */}
-        {!addObstacleMode && midPoints.map((mp, i) => (
-          <circle key={`mid-${i}`}
-            cx={sx(mp.x)} cy={sy(mp.y)}
-            r={hoveredMid === i ? 7 : 5}
-            fill={hoveredMid === i ? "#86efac" : "rgba(255,255,255,0.85)"}
-            stroke="#22c55e" strokeWidth="1.5"
-            style={{ cursor:"crosshair" }}
-            onClick={() => insertVertex(mp.ei)}
-            onMouseEnter={() => setHoveredMid(i)}
-            onMouseLeave={() => setHoveredMid(null)}
-          />
-        ))}
-
-        {/* Polygon vertex handles */}
-        {!addObstacleMode && pts.map((p, i) => {
-          const dragging = vtxDrag?.idx === i;
-          const hovered = hoveredVertex === i;
-          return (
-            <circle key={`v-${i}`}
-              cx={sx(p.x)} cy={sy(p.y)}
-              r={dragging ? 11 : hovered ? 10 : 8}
-              fill={dragging ? "#16a34a" : hovered ? "#22c55e" : "white"}
-              stroke="#16a34a" strokeWidth="2.5"
-              style={{ cursor: dragging ? "grabbing" : "grab" }}
-              onPointerDown={(e) => startVtxDrag(e, i)}
-              onContextMenu={(e) => deleteVertex(e, i)}
-              onMouseEnter={() => { if (!vtxDrag) setHoveredVertex(i); }}
-              onMouseLeave={() => setHoveredVertex(null)}
-            />
-          );
-        })}
       </svg>
 
-      <p className="mt-2 text-center text-xs text-slate-400">
-        {addObstacleMode
+      {segmenting && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-stone-900/45">
+          <div className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-medium text-stone-700 shadow">
+            <span className="inline-block w-4 h-4 border-2 border-stone-300 border-t-emerald-600 rounded-full animate-spin" />
+            Detecting obstacles with SAM 2…
+          </div>
+        </div>
+      )}
+
+      <p className="mt-2 text-center text-xs text-stone-400">
+        {refineMode === "roof"
+          ? <>Click the roof to <span className="text-emerald-600 font-medium">add</span> a segment · Shift-click to <span className="text-red-500 font-medium">remove</span> one</>
+          : refineMode === "obstacle"
+          ? "Click an obstacle on the roof — SAM 2 traces it, then you pick the type"
+          : addObstacleMode
           ? "Drag to mark an obstacle area — release to set type"
-          : <>
-              Drag <span className="text-emerald-600 font-medium">●</span> vertices to adjust ·{" "}
-              Click <span className="text-emerald-400 font-medium">◦</span> midpoints to add ·{" "}
-              Right-click vertex to delete · Click obstacle to select &amp; resize
-            </>
+          : "Click an obstacle to select · drag handles to resize · × to remove"
         }
       </p>
     </div>
