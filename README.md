@@ -54,9 +54,12 @@ the `rooftop picture/` folder of the submission bundle — drag one into Step 1 
 flow end-to-end.
 
 > **Competition judges:** you don't need your own API keys. A pre-filled `.env.local`
-> is in our Google Drive submission folder. Download it and place it in the cloned
-> project folder (next to `package.json`) instead of running the `cp .env.example` step
+> file is bundled with our competition submission. Drop it into the cloned project
+> folder (next to `package.json`) instead of running the `cp .env.example` step
 > above.
+>
+> On Windows, if your browser saved the file as `env.local` or `env.local.txt`,
+> rename it to exactly `.env.local` (with the leading dot, no `.txt`).
 
 ### Required environment variables
 
@@ -126,11 +129,12 @@ These are the numbers a judge can verify against the technical report:
 
 ## Submission bundle
 
-The competition deliverables live in the Google Drive folder alongside this repo:
+Our competition deliverables:
 
-- **Demo video** — `Video Project 1.mp4`
-- **Technical report** — `SolarFit_AI_Technical_Report.pdf`
 - **Source code** — this repository
+- **Demo video** — `Video Project 1.mp4` (submitted separately)
+- **Technical report** — `SolarFit_AI_Technical_Report.pdf` (submitted separately)
+- **Pre-filled `.env.local`** — bundled with the submission so judges don't need to register their own API keys
 
 ## Team
 
